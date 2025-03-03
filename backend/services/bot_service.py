@@ -7,7 +7,7 @@ from langchain.docstore.document import Document
 
 # In production, store your API key in an environment variable.
 # e.g. export OPENAI_API_KEY="sk-..."
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_KEY_HERE")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Directory to store the local Chroma vector DB
 PERSIST_DIR = "db_chroma"

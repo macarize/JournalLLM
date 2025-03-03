@@ -7,16 +7,23 @@ function BotPage() {
   const [bots, setBots] = useState([]);
 
   const createBot = async () => {
+    // POST -> @bot_router.post("/")
     if (!userId) {
       alert('Please specify userId.');
       return;
     }
+    const numericUserId = parseInt(userId, 10);
+    if (Number.isNaN(numericUserId)) {
+      alert('User ID must be a number.');
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:8000/bots/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: parseInt(userId, 10),
+          user_id: numericUserId,
           bot_name: botName,
           bot_prompt: botPrompt
         })
@@ -33,13 +40,21 @@ function BotPage() {
   };
 
   const fetchBots = async () => {
+    // GET -> @bot_router.get("/{user_id}")
     if (!userId) return;
+    const numericUserId = parseInt(userId, 10);
+    if (Number.isNaN(numericUserId)) {
+      alert('User ID must be a number.');
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:8000/bots/${userId}`);
+      const response = await fetch(`http://localhost:8000/bots/${numericUserId}`);
       const data = await response.json();
       setBots(data.bots || []);
     } catch (error) {
       console.error(error);
+      alert('Error fetching bots');
     }
   };
 
@@ -52,10 +67,20 @@ function BotPage() {
     <div style={{ margin: 20 }}>
       <h2>Bot Page</h2>
       <label>User ID: </label>
-      <input value={userId} onChange={e => setUserId(e.target.value)} /><br/>
+      <input
+        value={userId}
+        onChange={e => setUserId(e.target.value)}
+        placeholder="Numeric user ID"
+      />
+      <br/>
 
       <label>Bot Name: </label>
-      <input value={botName} onChange={e => setBotName(e.target.value)} /><br/>
+      <input
+        value={botName}
+        onChange={e => setBotName(e.target.value)}
+        placeholder="e.g. Supportive Bot"
+      />
+      <br/>
 
       <label>Bot Prompt: </label>
       <textarea
@@ -63,7 +88,9 @@ function BotPage() {
         cols="50"
         value={botPrompt}
         onChange={e => setBotPrompt(e.target.value)}
-      /><br/>
+        placeholder="Explain this bot's personality or style"
+      />
+      <br/>
       <button onClick={createBot}>Create Bot</button>
 
       <h3>Existing Bots</h3>

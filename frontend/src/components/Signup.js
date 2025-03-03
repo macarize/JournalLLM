@@ -22,18 +22,22 @@ function Signup() {
   return (
     <div style={{ margin: 20 }}>
       <h2>Signup</h2>
-      <input
-        type="text"
-        placeholder="username"
-        value={username}
-        onChange={e => setUsername(e.target.value)}
-      /><br/>
-      <input
-        type="password"
-        placeholder="password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-      /><br/>
+      <div>
+        <input
+          type="text"
+          placeholder="username"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+        />
+      </div>
+      <div>
+        <input
+          type="password"
+          placeholder="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+        />
+      </div>
       <button onClick={handleSignup}>Signup</button>
     </div>
   );

@@ -1,25 +1,33 @@
 import React, { useState, useEffect } from 'react';
 
 function JournalPage() {
-  const [userId, setUserId] = useState(''); // you'd normally store this from login
+  const [userId, setUserId] = useState('');
   const [content, setContent] = useState('');
   const [journals, setJournals] = useState([]);
 
   const createJournal = async () => {
+    // For the POST endpoint:
+    // @journal_router.post("/")
     if (!userId) {
-      alert('Please specify userId (simulate login).');
+      alert('Please specify a user ID (simulate login).');
       return;
     }
+    const numericUserId = parseInt(userId, 10);
+    if (Number.isNaN(numericUserId)) {
+      alert('User ID must be a number.');
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:8000/journals/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: parseInt(userId, 10), content })
+        body: JSON.stringify({ user_id: numericUserId, content })
       });
       const data = await response.json();
       alert(JSON.stringify(data));
       setContent('');
-      fetchJournals(); 
+      fetchJournals();
     } catch (error) {
       console.error(error);
       alert('Error creating journal');
@@ -27,17 +35,27 @@ function JournalPage() {
   };
 
   const fetchJournals = async () => {
+    // For the GET endpoint:
+    // @journal_router.get("/{user_id}")
     if (!userId) return;
+    const numericUserId = parseInt(userId, 10);
+    if (Number.isNaN(numericUserId)) {
+      alert('User ID must be a number.');
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:8000/journals/${userId}`);
+      const response = await fetch(`http://localhost:8000/journals/${numericUserId}`);
       const data = await response.json();
       setJournals(data.journals || []);
     } catch (error) {
       console.error(error);
+      alert('Error fetching journals');
     }
   };
 
   useEffect(() => {
+    // Whenever userId changes, fetch that user's journals
     fetchJournals();
     // eslint-disable-next-line
   }, [userId]);
@@ -47,7 +65,11 @@ function JournalPage() {
       <h2>Journal Page</h2>
       <div>
         <label>User ID: </label>
-        <input value={userId} onChange={e => setUserId(e.target.value)} />
+        <input
+          value={userId}
+          onChange={e => setUserId(e.target.value)}
+          placeholder="Enter a numeric user ID"
+        />
       </div>
       <div>
         <textarea

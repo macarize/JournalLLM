@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 function CommentPage() {
   const [userId, setUserId] = useState('');
@@ -6,16 +6,23 @@ function CommentPage() {
   const [comments, setComments] = useState([]);
 
   const getComments = async () => {
+    // POST -> @comment_router.post("/")
     if (!userId) {
       alert('Please specify userId.');
       return;
     }
+    const numericUserId = parseInt(userId, 10);
+    if (Number.isNaN(numericUserId)) {
+      alert('User ID must be a number.');
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:8000/comments/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: parseInt(userId, 10),
+          user_id: numericUserId,
           new_journal_text: newJournalText
         })
       });
@@ -32,7 +39,11 @@ function CommentPage() {
       <h2>Comments from Bots</h2>
       <div>
         <label>User ID: </label>
-        <input value={userId} onChange={e => setUserId(e.target.value)} />
+        <input
+          value={userId}
+          onChange={e => setUserId(e.target.value)}
+          placeholder="Numeric user ID"
+        />
       </div>
       <div>
         <textarea
