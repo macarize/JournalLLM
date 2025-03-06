@@ -4,7 +4,7 @@ from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore.document import Document
-
+from langchain_groq import ChatGroq
 # Directory to store local Chroma DB files
 PERSIST_DIR = "db_chroma"
 
@@ -50,11 +50,10 @@ def generate_bot_comment(user_id: int, bot_prompt: str, new_journal_text: str):
     vectorstore = get_vectorstore_for_user(user_id)
     retriever = vectorstore.as_retriever()
 
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0.7,
-        openai_api_key=OPENAI_API_KEY,
-        max_tokens=512
+    llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
+        temperature=0.8,
+        max_tokens=256
     )
 
     chain = RetrievalQA.from_chain_type(
