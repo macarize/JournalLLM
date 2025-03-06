@@ -49,7 +49,7 @@ def create_journal_comments(request: CommentRequest, db: Session = Depends(get_d
             bot_prompt=bot.bot_prompt,
             new_journal_text=request.new_journal_text
         )
-        # Store this comment in DB
+        # Store this comment in DB_
         bot_comment = BotComment(
             user_id=request.user_id,
             journal_id=request.journal_id,

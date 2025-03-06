@@ -48,7 +48,10 @@ def generate_bot_comment(user_id: int, bot_prompt: str, new_journal_text: str):
     Use user-specific RAG with the bot's system prompt + new journal text + that user's past entries.
     """
     vectorstore = get_vectorstore_for_user(user_id)
-    retriever = vectorstore.as_retriever()
+    retriever = vectorstore.as_retriever(
+        search_type="similarity_score_threshold",
+        search_kwargs={"score_threshold": 0.5}
+    )
 
     llm = ChatGroq(
         model="llama-3.3-70b-versatile",
