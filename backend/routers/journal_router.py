@@ -70,3 +70,16 @@ def get_journal_detail(user_id: int, journal_id: int, db: Session = Depends(get_
             for c in comments
         ]
     }
+
+@journal_router.delete("/{journal_id}")
+def delete_journal(journal_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes the journal with the given journal_id.
+    """
+    journal = db.query(JournalEntry).filter(JournalEntry.id == journal_id).first()
+    if not journal:
+        return {"error": "Journal not found"}
+
+    db.delete(journal)
+    db.commit()
+    return {"message": f"Journal {journal_id} deleted."}

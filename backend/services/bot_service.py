@@ -5,6 +5,9 @@ from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore.document import Document
 from langchain_groq import ChatGroq
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema.output_parser import StrOutputParser
+
 # Directory to store local Chroma DB files
 PERSIST_DIR = "db_chroma"
 
@@ -26,13 +29,26 @@ def get_vectorstore_for_user(user_id: int):
 def update_user_vector_store(user_id: int, journal_entries):
     """
     Embed and store (or update) the user's journal entries in their own Chroma collection.
+    Only new journal entries (not already added) will be embedded and stored.
     """
     vectorstore = get_vectorstore_for_user(user_id)
+
+    # Retrieve existing metadata from the vector store (if any)
+    try:
+        existing = vectorstore._collection.get()
+        existing_ids = {
+            metadata.get("entry_id")
+            for metadata in existing.get("metadatas", [])
+            if metadata.get("entry_id") is not None
+        }
+    except Exception:
+        existing_ids = set()
+
     docs = []
     for entry in journal_entries:
-        # Use a unique key so we don't add duplicates
-        # (Chroma doesn't automatically deduplicate yet)
-        doc_id = f"journal_{entry.id}"
+        # Check if this journal entry is already stored using its unique id.
+        if entry.id in existing_ids:
+            continue  # Skip adding duplicate
         docs.append(
             Document(
                 page_content=entry.content,
@@ -48,10 +64,6 @@ def generate_bot_comment(user_id: int, bot_prompt: str, new_journal_text: str):
     Use user-specific RAG with the bot's system prompt + new journal text + that user's past entries.
     """
     vectorstore = get_vectorstore_for_user(user_id)
-    retriever = vectorstore.as_retriever(
-        search_type="similarity_score_threshold",
-        search_kwargs={"score_threshold": 0.5}
-    )
 
     llm = ChatGroq(
         model="llama-3.3-70b-versatile",
@@ -59,13 +71,8 @@ def generate_bot_comment(user_id: int, bot_prompt: str, new_journal_text: str):
         max_tokens=256
     )
 
-    chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        retriever=retriever,
-        chain_type="stuff",
-        verbose=False
-    )
-
+    results = vectorstore.similarity_search(new_journal_text, k=4)
+    relevant_entries = "\n".join([doc.page_content for doc in results])
     final_prompt = f"""
 You are a bot with the following personality or perspective:
 {bot_prompt}
@@ -73,9 +80,15 @@ You are a bot with the following personality or perspective:
 The user wrote a new journal entry:
 {new_journal_text}
 
-You may refer only to the user's past journals (already embedded).
+Here are some relevant past journal entries:
+{relevant_entries}
+
+You may refer to the user's past journals.
 Respond thoroughly. Do not cut off or leave incomplete sentences.
 """
+    # final_prompt = ChatPromptTemplate.from_template(final_prompt)
+    parser = StrOutputParser()
 
-    response = chain.run(final_prompt)
+    chain = llm | parser
+    response = chain.invoke(final_prompt)
     return response.strip()

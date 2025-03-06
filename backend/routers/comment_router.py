@@ -68,3 +68,20 @@ def create_journal_comments(request: CommentRequest, db: Session = Depends(get_d
         })
 
     return {"message": "Comments generated", "comments": new_comments}
+
+@comment_router.delete("/{user_id}/comment/{comment_id}")
+def delete_bot_comment(user_id: int, comment_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes a specific bot comment if it belongs to user_id.
+    """
+    comment = db.query(BotComment).filter(
+        BotComment.id == comment_id,
+        BotComment.user_id == user_id
+    ).first()
+
+    if not comment:
+        return {"error": "Comment not found or does not belong to this user."}
+
+    db.delete(comment)
+    db.commit()
+    return {"message": f"Comment {comment_id} deleted."}

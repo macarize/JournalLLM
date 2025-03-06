@@ -57,6 +57,26 @@ function JournalDetailPage({ userId }) {
     }
   };
 
+  const deleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    try {
+      const res = await fetch(`http://localhost:8000/comments/${userId}/comment/${commentId}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert(data.message);
+        // remove it from local state
+        setComments(comments.filter((c) => c.id !== commentId));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting comment');
+    }
+  };
+
   if (!journal) {
     return (
       <div style={{ margin: 20 }}>
@@ -92,6 +112,7 @@ function JournalDetailPage({ userId }) {
         {comments.map((c) => (
           <li key={c.id}>
             <strong>Comment #{c.id} (Bot ID: {c.bot_id}):</strong> {c.comment}
+            <button onClick={() => deleteComment(c.id)}>Delete</button>
           </li>
         ))}
       </ul>

@@ -34,6 +34,27 @@ function CommentPage() {
     }
   };
 
+  const deleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/comments/${commentId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert(data.message);
+        // Remove from local state
+        setComments(comments.filter(c => c.comment_id !== commentId));
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error deleting comment');
+    }
+  };
+
   return (
     <div style={{ margin: 20 }}>
       <h2>Comments from Bots</h2>
@@ -61,6 +82,7 @@ function CommentPage() {
         {comments.map((c, index) => (
           <li key={index}>
             <strong>{c.bot_name}:</strong> {c.comment}
+            <button onClick={() => deleteComment(c.comment_id)}>Delete</button>
           </li>
         ))}
       </ul>

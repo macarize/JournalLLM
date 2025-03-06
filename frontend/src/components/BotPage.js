@@ -50,6 +50,24 @@ function BotPage({ userId }) {
     }
   };
 
+  const deleteBot = async (botId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/bots/${botId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert(data.message);
+        setBots(bots.filter(b => b.id !== botId));
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error deleting bot');
+    }
+  };
+
   return (
     <div style={{ margin: 20 }}>
       <h2>My Bots</h2>
@@ -79,6 +97,7 @@ function BotPage({ userId }) {
         {bots.map(b => (
           <li key={b.id}>
             [ID: {b.id}] <strong>{b.bot_name}</strong> - {b.bot_prompt}
+            <button onClick={() => deleteBot(b.id)}>Delete</button>
           </li>
         ))}
       </ul>

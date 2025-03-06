@@ -51,6 +51,25 @@ function JournalListPage({ userId }) {
     }
   };
 
+  const deleteJournal = async (journalId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/journals/${journalId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert(data.message);
+        // Remove the journal from local state
+        setJournals(journals.filter(j => j.id !== journalId));
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error deleting journal');
+    }
+  };
+
   return (
     <div style={{ margin: 20 }}>
       <h2>My Journals</h2>
@@ -80,6 +99,7 @@ function JournalListPage({ userId }) {
         {journals.map(j => (
           <li key={j.id}>
             <Link to={`/journals/${j.id}`}>{j.title}</Link>
+            <button onClick={() => deleteJournal(j.id)}>Delete</button>
           </li>
         ))}
       </ul>
