@@ -1,35 +1,46 @@
 import React, { useState, useEffect } from 'react';
 
-function BotPage() {
-  const [userId, setUserId] = useState('');
+function BotPage({ userId }) {
   const [botName, setBotName] = useState('');
   const [botPrompt, setBotPrompt] = useState('');
   const [bots, setBots] = useState([]);
 
-  const createBot = async () => {
-    // POST -> @bot_router.post("/")
-    if (!userId) {
-      alert('Please specify userId.');
-      return;
+  useEffect(() => {
+    if (userId) {
+      fetchBots();
     }
-    const numericUserId = parseInt(userId, 10);
-    if (Number.isNaN(numericUserId)) {
-      alert('User ID must be a number.');
-      return;
-    }
+    // eslint-disable-next-line
+  }, [userId]);
 
+  const fetchBots = async () => {
+    if (!userId) return;
+    try {
+      const response = await fetch(`http://localhost:8000/bots/${userId}`);
+      const data = await response.json();
+      setBots(data.bots || []);
+    } catch (error) {
+      console.error(error);
+      alert('Error fetching bots');
+    }
+  };
+
+  const createBot = async () => {
+    if (!userId) {
+      alert('Please log in first.');
+      return;
+    }
     try {
       const response = await fetch('http://localhost:8000/bots/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: numericUserId,
+          user_id: userId,
           bot_name: botName,
           bot_prompt: botPrompt
         })
       });
       const data = await response.json();
-      alert(JSON.stringify(data));
+      alert(data.message);
       setBotName('');
       setBotPrompt('');
       fetchBots();
@@ -39,65 +50,35 @@ function BotPage() {
     }
   };
 
-  const fetchBots = async () => {
-    // GET -> @bot_router.get("/{user_id}")
-    if (!userId) return;
-    const numericUserId = parseInt(userId, 10);
-    if (Number.isNaN(numericUserId)) {
-      alert('User ID must be a number.');
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://localhost:8000/bots/${numericUserId}`);
-      const data = await response.json();
-      setBots(data.bots || []);
-    } catch (error) {
-      console.error(error);
-      alert('Error fetching bots');
-    }
-  };
-
-  useEffect(() => {
-    fetchBots();
-    // eslint-disable-next-line
-  }, [userId]);
-
   return (
     <div style={{ margin: 20 }}>
-      <h2>Bot Page</h2>
-      <label>User ID: </label>
-      <input
-        value={userId}
-        onChange={e => setUserId(e.target.value)}
-        placeholder="Numeric user ID"
-      />
-      <br/>
-
-      <label>Bot Name: </label>
-      <input
-        value={botName}
-        onChange={e => setBotName(e.target.value)}
-        placeholder="e.g. Supportive Bot"
-      />
-      <br/>
-
-      <label>Bot Prompt: </label>
-      <textarea
-        rows="3"
-        cols="50"
-        value={botPrompt}
-        onChange={e => setBotPrompt(e.target.value)}
-        placeholder="Explain this bot's personality or style"
-      />
-      <br/>
+      <h2>My Bots</h2>
+      <div>
+        <label>Bot Name: </label>
+        <input
+          value={botName}
+          onChange={e => setBotName(e.target.value)}
+          placeholder="SupportiveBot"
+        />
+      </div>
+      <div>
+        <label>Bot Prompt: </label>
+        <textarea
+          rows="3"
+          cols="50"
+          value={botPrompt}
+          onChange={e => setBotPrompt(e.target.value)}
+          placeholder="You are a supportive bot, always encouraging..."
+        />
+      </div>
       <button onClick={createBot}>Create Bot</button>
 
+      <hr />
       <h3>Existing Bots</h3>
       <ul>
         {bots.map(b => (
           <li key={b.id}>
-            [ID: {b.id}] Name: {b.bot_name}, Prompt: {b.bot_prompt}
+            [ID: {b.id}] <strong>{b.bot_name}</strong> - {b.bot_prompt}
           </li>
         ))}
       </ul>

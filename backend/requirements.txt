@@ -3,6 +3,7 @@ uvicorn
 langchain
 openai
 chromadb
-pydantic[dotenv]
+pydantic
+python-dotenv
 sqlalchemy
 passlib

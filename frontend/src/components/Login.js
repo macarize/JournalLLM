@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function Login() {
+function Login({ setUserId }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -12,8 +12,12 @@ function Login() {
         body: JSON.stringify({ username, password })
       });
       const data = await response.json();
-      alert(JSON.stringify(data));
-      // In real production: store data.user_id or JWT in localStorage
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert(data.message);
+        setUserId(data.user_id);
+      }
     } catch (error) {
       console.error(error);
       alert('Error logging in');

@@ -14,7 +14,6 @@ class UserCreate(BaseModel):
 
 @user_router.post("/signup")
 def signup(user_data: UserCreate, db: Session = Depends(get_db)):
-    # Check if user already exists
     existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:
         return {"error": "Username already taken"}
@@ -31,7 +30,6 @@ def login(user_data: UserCreate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == user_data.username).first()
     if not user or not bcrypt.verify(user_data.password, user.password):
         return {"error": "Invalid credentials"}
-    # In production, generate and return a JWT
     return {"message": "Login successful", "user_id": user.id}
 
 @user_router.delete("/{user_id}")

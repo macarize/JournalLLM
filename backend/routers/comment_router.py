@@ -3,33 +3,68 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Bot, JournalEntry
-from services.bot_service import update_vector_store, generate_bot_comment
+from models import Bot, JournalEntry, BotComment
+from services.bot_service import (
+    update_user_vector_store,
+    generate_bot_comment
+)
 
 comment_router = APIRouter()
 
 class CommentRequest(BaseModel):
     user_id: int
+    journal_id: int
     new_journal_text: str
 
-@comment_router.post("/")
-def get_bot_comments(request: CommentRequest, db: Session = Depends(get_db)):
-    # Get all bots for the user
+@comment_router.post("/journal_comment")
+def create_journal_comments(request: CommentRequest, db: Session = Depends(get_db)):
+    """
+    Generate comments from all bots for this user, for the given journal text,
+    store them in BotComment, and return them.
+    """
+    # 1. Get all bots for the user
     bots = db.query(Bot).filter(Bot.user_id == request.user_id).all()
+    if not bots:
+        return {"message": "No bots found for user.", "comments": []}
 
-    # Get all past journals for the user
-    user_journals = db.query(JournalEntry).filter(JournalEntry.user_id == request.user_id).all()
+    # 2. Verify the journal
+    journal = db.query(JournalEntry).filter(
+        JournalEntry.id == request.journal_id,
+        JournalEntry.user_id == request.user_id
+    ).first()
+    if not journal:
+        return {"error": "Journal not found for this user."}
 
-    # Update the vector store with user's journals (simple approach)
-    update_vector_store(user_journals)
+    # 3. Update the user-specific vector store with all user journals
+    user_journals = db.query(JournalEntry).filter(
+        JournalEntry.user_id == request.user_id
+    ).all()
+    update_user_vector_store(request.user_id, user_journals)
 
-    # Generate response from each bot
-    responses = []
+    # 4. For each bot, generate a new comment
+    new_comments = []
     for bot in bots:
-        comment = generate_bot_comment(bot.bot_prompt, request.new_journal_text)
-        responses.append({
+        comment_text = generate_bot_comment(
+            user_id=request.user_id,
+            bot_prompt=bot.bot_prompt,
+            new_journal_text=request.new_journal_text
+        )
+        # Store this comment in DB
+        bot_comment = BotComment(
+            user_id=request.user_id,
+            journal_id=request.journal_id,
+            bot_id=bot.id,
+            comment=comment_text
+        )
+        db.add(bot_comment)
+        db.commit()
+        db.refresh(bot_comment)
+
+        new_comments.append({
             "bot_name": bot.bot_name,
-            "comment": comment
+            "bot_id": bot.id,
+            "comment_id": bot_comment.id,
+            "comment": comment_text
         })
 
-    return {"comments": responses}
+    return {"message": "Comments generated", "comments": new_comments}
