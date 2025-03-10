@@ -5,8 +5,8 @@ function JournalDetailPage({ userId }) {
   const { journalId } = useParams();
   const [journal, setJournal] = useState(null);
   const [comments, setComments] = useState([]);
-  const [newText, setNewText] = useState(''); // text for generating new comments
 
+  // Fetch the journal + its comments whenever userId or journalId changes
   useEffect(() => {
     if (userId && journalId) {
       fetchJournalDetail();
@@ -14,6 +14,7 @@ function JournalDetailPage({ userId }) {
     // eslint-disable-next-line
   }, [userId, journalId]);
 
+  // 1. Load the journal detail (title + content) and existing comments
   const fetchJournalDetail = async () => {
     try {
       const res = await fetch(`http://localhost:8000/journals/${userId}/detail/${journalId}`);
@@ -30,6 +31,7 @@ function JournalDetailPage({ userId }) {
     }
   };
 
+  // 2. Generate new bot comments (the server uses the journal content itself)
   const generateComments = async () => {
     if (!userId || !journalId) return;
     try {
@@ -38,8 +40,7 @@ function JournalDetailPage({ userId }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: parseInt(userId, 10),
-          journal_id: parseInt(journalId, 10),
-          new_journal_text: newText
+          journal_id: parseInt(journalId, 10)
         })
       });
       const data = await res.json();
@@ -47,8 +48,7 @@ function JournalDetailPage({ userId }) {
         alert(data.error);
       } else {
         alert(data.message);
-        // The new comments come in data.comments
-        // We can re-fetch the journal detail or just add them
+        // Refresh to see new comments
         fetchJournalDetail();
       }
     } catch (err) {
@@ -57,6 +57,7 @@ function JournalDetailPage({ userId }) {
     }
   };
 
+  // 3. Delete a specific comment from DB, then remove from local state
   const deleteComment = async (commentId) => {
     if (!window.confirm('Are you sure you want to delete this comment?')) return;
     try {
@@ -68,8 +69,7 @@ function JournalDetailPage({ userId }) {
         alert(data.error);
       } else {
         alert(data.message);
-        // remove it from local state
-        setComments(comments.filter((c) => c.id !== commentId));
+        setComments(comments.filter((c) => c.comment_id !== commentId));
       }
     } catch (err) {
       console.error(err);
@@ -77,6 +77,7 @@ function JournalDetailPage({ userId }) {
     }
   };
 
+  // If we haven't loaded the journal yet, show a placeholder
   if (!journal) {
     return (
       <div style={{ margin: 20 }}>
@@ -93,16 +94,6 @@ function JournalDetailPage({ userId }) {
       <p>{journal.content}</p>
 
       <hr />
-
-      <h4>Generate Comments from Your Bots</h4>
-      <textarea
-        rows="3"
-        cols="50"
-        value={newText}
-        onChange={e => setNewText(e.target.value)}
-        placeholder="What new text do you want the bots to comment on?"
-      />
-      <br />
       <button onClick={generateComments}>Generate Bot Comments</button>
 
       <hr />
@@ -110,8 +101,11 @@ function JournalDetailPage({ userId }) {
       {comments.length === 0 && <p>No comments yet.</p>}
       <ul>
         {comments.map((c) => (
-          <li key={c.id}>
-            <strong>Comment #{c.id} (Bot ID: {c.bot_id}):</strong> {c.comment}
+          <li key={c.comment_id}>
+            <strong>
+              Comment #{c.id} (Bot: {c.bot_name}):
+            </strong>{' '}
+            {c.comment}{' '}
             <button onClick={() => deleteComment(c.id)}>Delete</button>
           </li>
         ))}

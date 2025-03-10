@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import JournalEntry, BotComment
+from services.bot_service import get_vectorstore_for_user, update_user_vector_store  # or similar function
 
 journal_router = APIRouter()
 
 class JournalCreate(BaseModel):
     user_id: int
-    title: str         # new: journal title
+    title: str        
     content: str
 
 @journal_router.post("/")
@@ -22,6 +23,10 @@ def create_journal(entry: JournalCreate, db: Session = Depends(get_db)):
     db.add(new_entry)
     db.commit()
     db.refresh(new_entry)
+
+    user_journals = db.query(JournalEntry).filter(JournalEntry.user_id == entry.user_id).all()
+    update_user_vector_store(entry.user_id, user_journals)
+
     return {"message": "Journal entry created", "entry_id": new_entry.id}
 
 @journal_router.get("/{user_id}")
@@ -65,7 +70,8 @@ def get_journal_detail(user_id: int, journal_id: int, db: Session = Depends(get_
                 "id": c.id,
                 "bot_id": c.bot_id,
                 "comment": c.comment,
-                "created_at": c.created_at
+                "created_at": c.created_at,
+                "bot_name": c.bot_name
             }
             for c in comments
         ]
@@ -73,13 +79,23 @@ def get_journal_detail(user_id: int, journal_id: int, db: Session = Depends(get_
 
 @journal_router.delete("/{journal_id}")
 def delete_journal(journal_id: int, db: Session = Depends(get_db)):
-    """
-    Deletes the journal with the given journal_id.
-    """
     journal = db.query(JournalEntry).filter(JournalEntry.id == journal_id).first()
     if not journal:
         return {"error": "Journal not found"}
+    
+    # 1. Identify the user ID
+    user_id = journal.user_id
 
+    # 2. Delete the journal from DB
     db.delete(journal)
+    db.query(BotComment).filter(BotComment.journal_id == journal_id).delete()
     db.commit()
-    return {"message": f"Journal {journal_id} deleted."}
+
+    # 3. Also remove from the user-specific Chroma store
+    vectorstore = get_vectorstore_for_user(user_id)
+    doc_id = f"journal_{journal_id}"
+
+    vectorstore.delete(ids=[doc_id])
+    vectorstore.persist()
+
+    return {"message": f"Journal {journal_id} deleted and Chroma embedding removed."}
