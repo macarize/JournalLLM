@@ -32,7 +32,6 @@ def create_journal(entry: JournalCreate, db: Session = Depends(get_db)):
 @journal_router.get("/{user_id}")
 def get_journals(user_id: int, db: Session = Depends(get_db)):
     entries = db.query(JournalEntry).filter(JournalEntry.user_id == user_id).all()
-    # Return just ID + Title so user can click to see detail
     return {
         "journals": [
             {"id": e.id, "title": e.title}
@@ -52,13 +51,11 @@ def get_journal_detail(user_id: int, journal_id: int, db: Session = Depends(get_
     if not journal:
         return {"error": "Journal not found"}
 
-    # Fetch comments associated with this journal
     comments = db.query(BotComment).filter(
         BotComment.user_id == user_id,
         BotComment.journal_id == journal_id
     ).all()
 
-    # Return the journal and all the comments
     return {
         "journal": {
             "id": journal.id,
@@ -83,15 +80,12 @@ def delete_journal(journal_id: int, db: Session = Depends(get_db)):
     if not journal:
         return {"error": "Journal not found"}
     
-    # 1. Identify the user ID
     user_id = journal.user_id
 
-    # 2. Delete the journal from DB
     db.delete(journal)
     db.query(BotComment).filter(BotComment.journal_id == journal_id).delete()
     db.commit()
 
-    # 3. Also remove from the user-specific Chroma store
     vectorstore = get_vectorstore_for_user(user_id)
     doc_id = f"journal_{journal_id}"
 
