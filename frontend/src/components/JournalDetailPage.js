@@ -87,16 +87,11 @@ function JournalDetailPage({ userId }) {
         throw new Error(errorData.detail || 'Failed to delete comment');
       }
 
-      const data = await res.json();
       alert(data.message);
-
-      // Remove the comment from local state
-      setComments((prev) => prev.filter((c) => c.comment_id !== commentId));
+      setComments(comments.filter((c) => c.id !== commentId));
     } catch (err) {
       console.error('Delete error:', err);
       alert(err.message || 'Error deleting comment');
-    } finally {
-      setLoading(false);
     }
   };
 
