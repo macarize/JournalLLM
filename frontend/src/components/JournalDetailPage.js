@@ -144,7 +144,7 @@ const deleteComment = async (commentId) => {
         <ul style={{ listStyleType: 'none', padding: 0 }}>
           {comments.map((c) => (
             <li
-              key={c.comment_id}
+              key={c.id}
               style={{
                 padding: '8px',
                 border: '1px solid #ddd',
@@ -154,11 +154,11 @@ const deleteComment = async (commentId) => {
               }}
             >
               <strong>
-                Comment #{c.comment_id} (Bot: {c.bot_name}):
+                Comment #{c.id} (Bot: {c.bot_name}):
               </strong>{' '}
               {c.comment}
               <button
-                onClick={() => deleteComment(c.comment_id)}
+                onClick={() => deleteComment(c.id)}
                 disabled={loading}
                 style={{
                   padding: '5px 10px',
