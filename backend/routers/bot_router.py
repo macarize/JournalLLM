@@ -36,9 +36,6 @@ def get_bots(user_id: int, db: Session = Depends(get_db)):
 
 @bot_router.delete("/{bot_id}")
 def delete_bot(bot_id: int, db: Session = Depends(get_db)):
-    """
-    Deletes the bot with the given bot_id.
-    """
     bot = db.query(Bot).filter(Bot.id == bot_id).first()
     if not bot:
         return {"error": "Bot not found"}

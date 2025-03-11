@@ -9,7 +9,6 @@ function BotPage({ userId }) {
     if (userId) {
       fetchBots();
     }
-    // eslint-disable-next-line
   }, [userId]);
 
   const fetchBots = async () => {

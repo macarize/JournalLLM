@@ -41,9 +41,6 @@ def get_journals(user_id: int, db: Session = Depends(get_db)):
 
 @journal_router.get("/{user_id}/detail/{journal_id}")
 def get_journal_detail(user_id: int, journal_id: int, db: Session = Depends(get_db)):
-    """
-    Return the specific journal content + the bot comments for that journal.
-    """
     journal = db.query(JournalEntry).filter(
         JournalEntry.user_id == user_id,
         JournalEntry.id == journal_id

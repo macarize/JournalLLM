@@ -54,7 +54,7 @@ def generate_bot_comment(user_id: int, bot_prompt: str, new_journal_text: str, e
     filtered_docs = [d for d in docs if d.metadata.get("entry_id") != exclude_journal_id]
 
     llm = ChatGroq(
-        model_name="llama-3.3-70b-versatile",  # or "gpt-3.5-turbo"
+        model_name="llama-3.3-70b-versatile",
         temperature=0.7,
         max_tokens=512
     )
