@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import Base, engine
@@ -33,6 +34,10 @@ app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(journal_router, prefix="/journals", tags=["Journals"])
 app.include_router(bot_router, prefix="/bots", tags=["Bots"])
 app.include_router(comment_router, prefix="/comments", tags=["Comments"])
+
+@app.options("/{path:path}")
+async def options_handler(path: str, request: Request):
+    return {"message": "CORS preflight OK"}
 
 @app.get("/")
 def root():
