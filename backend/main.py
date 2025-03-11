@@ -14,7 +14,11 @@ app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 # Enable CORS (adjust origins if needed)
-origins = ["http://localhost:3000"]
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -28,6 +32,10 @@ app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(journal_router, prefix="/journals", tags=["Journals"])
 app.include_router(bot_router, prefix="/bots", tags=["Bots"])
 app.include_router(comment_router, prefix="/comments", tags=["Comments"])
+
+@app.get("/")
+def root():
+    return {"message": "FastAPI is running"}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
