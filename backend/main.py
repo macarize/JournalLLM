@@ -16,7 +16,8 @@ Base.metadata.create_all(bind=engine)
 # Enable CORS (adjust origins if needed)
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://34.28.109.2:3000",
+    "*"
     ]
 
 app.add_middleware(

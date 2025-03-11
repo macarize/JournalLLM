@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import BASE_URL from '../config';
 
 function JournalDetailPage({ userId }) {
   const { journalId } = useParams();
   const [journal, setJournal] = useState(null);
   const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch the journal + its comments whenever userId or journalId changes
+  // Fetch the journal + comments when userId or journalId changes
   useEffect(() => {
     if (userId && journalId) {
       fetchJournalDetail();
@@ -14,28 +16,36 @@ function JournalDetailPage({ userId }) {
     // eslint-disable-next-line
   }, [userId, journalId]);
 
-  // 1. Load the journal detail (title + content) and existing comments
+  // 1. Load the journal detail and existing comments
   const fetchJournalDetail = async () => {
+    if (!userId || !journalId) return;
+
+    setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/journals/${userId}/detail/${journalId}`);
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-      } else {
-        setJournal(data.journal);
-        setComments(data.comments);
+      const res = await fetch(`${BASE_URL}/journals/${userId}/detail/${journalId}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to fetch journal detail');
       }
+
+      const data = await res.json();
+      setJournal(data.journal);
+      setComments(data.comments || []);
     } catch (err) {
-      console.error(err);
-      alert('Error fetching journal detail');
+      console.error('Fetch error:', err);
+      alert(err.message || 'Error fetching journal detail');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 2. Generate new bot comments (the server uses the journal content itself)
+  // 2. Generate new bot comments
   const generateComments = async () => {
     if (!userId || !journalId) return;
+
+    setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/comments/journal_comment', {
+      const res = await fetch(`${BASE_URL}/comments/journal_comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -43,41 +53,53 @@ function JournalDetailPage({ userId }) {
           journal_id: parseInt(journalId, 10)
         })
       });
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-      } else {
-        alert(data.message);
-        // Refresh to see new comments
-        fetchJournalDetail();
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to generate comments');
       }
+
+      const data = await res.json();
+      alert(data.message);
+
+      // Refresh to see new comments
+      fetchJournalDetail();
     } catch (err) {
-      console.error(err);
-      alert('Error generating comments');
+      console.error('Generate error:', err);
+      alert(err.message || 'Error generating comments');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 3. Delete a specific comment from DB, then remove from local state
+  // 3. Delete a specific comment
   const deleteComment = async (commentId) => {
     if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/comments/${userId}/comment/${commentId}`, {
+      const res = await fetch(`${BASE_URL}/comments/${userId}/comment/${commentId}`, {
         method: 'DELETE'
       });
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-      } else {
-        alert(data.message);
-        setComments(comments.filter((c) => c.comment_id !== commentId));
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to delete comment');
       }
+
+      const data = await res.json();
+      alert(data.message);
+
+      // Remove the comment from local state
+      setComments((prev) => prev.filter((c) => c.comment_id !== commentId));
     } catch (err) {
-      console.error(err);
-      alert('Error deleting comment');
+      console.error('Delete error:', err);
+      alert(err.message || 'Error deleting comment');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // If we haven't loaded the journal yet, show a placeholder
   if (!journal) {
     return (
       <div style={{ margin: 20 }}>
@@ -94,22 +116,67 @@ function JournalDetailPage({ userId }) {
       <p>{journal.content}</p>
 
       <hr />
-      <button onClick={generateComments}>Generate Bot Comments</button>
+
+      {/* Generate Bot Comments Button */}
+      <button
+        onClick={generateComments}
+        disabled={loading}
+        style={{
+          padding: '10px 20px',
+          backgroundColor: loading ? '#ccc' : '#4CAF50',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          marginBottom: '20px',
+        }}
+      >
+        {loading ? 'Generating...' : 'Generate Bot Comments'}
+      </button>
 
       <hr />
+
+      {/* Existing Comments */}
       <h4>Existing Comments</h4>
-      {comments.length === 0 && <p>No comments yet.</p>}
-      <ul>
-        {comments.map((c) => (
-          <li key={c.comment_id}>
-            <strong>
-              Comment #{c.id} (Bot: {c.bot_name}):
-            </strong>{' '}
-            {c.comment}{' '}
-            <button onClick={() => deleteComment(c.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      {comments.length === 0 ? (
+        <p>No comments yet.</p>
+      ) : (
+        <ul style={{ listStyleType: 'none', padding: 0 }}>
+          {comments.map((c) => (
+            <li
+              key={c.comment_id}
+              style={{
+                padding: '8px',
+                border: '1px solid #ddd',
+                marginBottom: '10px',
+                borderRadius: '5px',
+                backgroundColor: '#fafafa',
+              }}
+            >
+              <strong>
+                Comment #{c.comment_id} (Bot: {c.bot_name}):
+              </strong>{' '}
+              {c.comment}
+              <button
+                onClick={() => deleteComment(c.comment_id)}
+                disabled={loading}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  float: 'right',
+                  marginLeft: '10px',
+                }}
+              >
+                {loading ? 'Deleting...' : 'Delete'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
