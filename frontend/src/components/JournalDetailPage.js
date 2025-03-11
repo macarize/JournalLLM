@@ -94,8 +94,6 @@ const deleteComment = async (commentId) => {
   } catch (err) {
     console.error('Delete error:', err);
     alert(err.message || 'Error deleting comment');
-  } finally {
-    setLoading(false);
   }
 };
 
@@ -144,7 +142,7 @@ const deleteComment = async (commentId) => {
         <ul style={{ listStyleType: 'none', padding: 0 }}>
           {comments.map((c) => (
             <li
-              key={c.id}
+              key={c.comment_id}
               style={{
                 padding: '8px',
                 border: '1px solid #ddd',
