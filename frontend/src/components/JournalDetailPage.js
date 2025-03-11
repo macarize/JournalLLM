@@ -90,7 +90,7 @@ const deleteComment = async (commentId) => {
     const data = await res.json();
     alert(data.message);
 
-    setComments(comments.filter((c) => c.comment_id !== commentId));
+    setComments((prevComments) => prevComments.filter((c) => c.id !== commentId));
   } catch (err) {
     console.error('Delete error:', err);
     alert(err.message || 'Error deleting comment');
