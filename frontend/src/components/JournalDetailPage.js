@@ -73,27 +73,32 @@ function JournalDetailPage({ userId }) {
   };
 
   // 3. Delete a specific comment
-  const deleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+const deleteComment = async (commentId) => {
+  if (!window.confirm('Are you sure you want to delete this comment?')) return;
 
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE_URL}/comments/${userId}/comment/${commentId}`, {
-        method: 'DELETE'
-      });
+  setLoading(true);
+  try {
+    const res = await fetch(`${BASE_URL}/comments/${userId}/comment/${commentId}`, {
+      method: 'DELETE'
+    });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to delete comment');
-      }
-
-      alert(data.message);
-      setComments(comments.filter((c) => c.id !== commentId));
-    } catch (err) {
-      console.error('Delete error:', err);
-      alert(err.message || 'Error deleting comment');
+    if (!res.ok) {
+      const errorData = await res.json(); 
+      throw new Error(errorData.detail || 'Failed to delete comment');
     }
-  };
+
+    const data = await res.json();
+    alert(data.message);
+
+    setComments(comments.filter((c) => c.comment_id !== commentId));
+  } catch (err) {
+    console.error('Delete error:', err);
+    alert(err.message || 'Error deleting comment');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (!journal) {
     return (
